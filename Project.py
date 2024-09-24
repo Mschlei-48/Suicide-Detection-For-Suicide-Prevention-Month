@@ -365,28 +365,29 @@ with tab1:
             width=420
             )
             st.plotly_chart(fig_non_suicide)
-    elif selected_option == "Text Length" and clas=="Suicide":
-            data['text_length'] = data['cleaned_text'].apply(lambda x: len(x.split()))
-            # Create a Plotly Express histogram
-            suicide_data = data[data['class'] == 'suicide']
-            fig_suicide = px.histogram(
-            suicide_data, 
-            x="text_length", 
-            histfunc="count", 
-            title="Text Length Distribution for Suicide Class",
-            width=420
-            )
-            st.plotly_chart(fig_suicide)
-    elif selected_option == "Text Length" and clas=="Non-Suicide":
-            non_suicide_data = data[data['class'] == 'non-suicide']
-            fig_non_suicide = px.histogram(
-            non_suicide_data, 
-            x="text_length", 
-            histfunc="count", 
-            title="Text Length Distribution for Non-Suicide Class",
-            width=420
-            )
-            st.plotly_chart(fig_non_suicide)
+    elif selected_option == "TextLength" and clas=="Suicide":
+        data['text_length'] = data['cleaned_text'].apply(lambda x: len(x.split()))
+        # Create a Plotly Express histogram
+        suicide_data = data[data['class'] == 'suicide']
+        fig_suicide = px.histogram(
+        suicide_data, 
+        x="text_length", 
+        histfunc="count", 
+        title="Text Length Distribution for Suicide Class",
+        width=800
+        )
+        st.plotly_chart(fig_suicide)
+    elif selected_option == "TextLength" and clas=="Non-Suicide":
+        data['text_length'] = data['cleaned_text'].apply(lambda x: len(x.split()))
+        non_suicide_data = data[data['class'] == 'non-suicide']
+        fig_non_suicide = px.histogram(
+        non_suicide_data, 
+        x="text_length", 
+        histfunc="count", 
+        title="Text Length Distribution for Non-Suicide Class",
+        width=800
+        )
+        st.plotly_chart(fig_non_suicide)
 
     elif selected_option == "Top 10 Words" and clas=="Both":
         top1,top2=st.columns([0.5,0.5])
