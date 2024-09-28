@@ -29,7 +29,9 @@ except LookupError:
     stop_words = set(stopwords.words('english'))
 st.set_page_config(layout="wide")
 
-st.image("newLogo.png",width=250)
+col1, col2, col3 = st.columns([1, 2, 1])
+with col2:
+    st.write(f"<h1>Suicide Detection</h1>",unsafe_allow_html=True)
 with st.sidebar:
     selected_option = st.selectbox(
         'Choose a plot:',
@@ -42,25 +44,25 @@ def load_data():
 
 data = load_data()
 data['cleaned_text'] = data['cleaned_text'].astype(str)  # Convert to string if necessary
-data['cleaned_text'] = data['cleaned_text'].apply(lambda x: ' '.join([word for word in x.split() if word not in ['im', 'ive', 'dont','one','cant','like','even','jake']]))
+data['cleaned_text'] = data['cleaned_text'].apply(lambda x: ' '.join([word for word in x.split() if word not in ['im', 'ive', 'dont','one','cant','like','even','jake','paulfuck']]))
 
 # data=data.iloc[:,1:]
-st.write("""
-#### Suicide and Its Detection in Data Science
+# st.write("""
+# #### Suicide and Its Detection in Data Science
 
-**Suicide:**
-Suicide is a critical public health issue, involving the intentional end of one's own life. It is often linked to mental health conditions and life stressors.
+# **Suicide:**
+# Suicide is a critical public health issue, involving the intentional end of one's own life. It is often linked to mental health conditions and life stressors.
 
-**Suicide Detection in Data Science:**
-Data science helps identify suicide risk by analyzing various data sources:
+# **Suicide Detection in Data Science:**
+# Data science helps identify suicide risk by analyzing various data sources:
 
-- **Text Data:** Analyzing social media or online texts using sentiment analysis and NLP to detect signs of distress.
-- **Medical Records:** Examining electronic health records for patterns related to mental health and previous attempts.
-- **Machine Learning Models:** Using algorithms to classify risk levels and detect unusual behavior patterns.
+# - **Text Data:** Analyzing social media or online texts using sentiment analysis and NLP to detect signs of distress.
+# - **Medical Records:** Examining electronic health records for patterns related to mental health and previous attempts.
+# - **Machine Learning Models:** Using algorithms to classify risk levels and detect unusual behavior patterns.
 
 
-Data science enhances suicide prevention by identifying risk factors and supporting timely interventions.
-""")
+# Data science enhances suicide prevention by identifying risk factors and supporting timely interventions.
+# """)
 tab1, tab2= st.tabs(["Data Visualisation", "Data Modeling"])
 with tab1:
     total_rows = len(data)
@@ -70,19 +72,19 @@ with tab1:
     # Display KPIs using custom HTML
     st.write(f"""
         <div style="display: flex; justify-content: space-between;">
-            <div style="padding: 8px; border: 2px solid #ddd; border-radius: 10px; width: 30%;height:6%;border-left:7px solid purple;">
+            <div style="padding: 8px; border: 2px solid #ddd; border-radius: 10px; width: 30%;height:6%;border-left:7px solid purple;background-color:white;color:black">
                 <p style="font-weight: bold;line-height:1;">Total Rows</p>
-                <h4 style="line-height:0">{total_rows}</h4>
+                <h4 style="line-height:0;color:black">{total_rows}</h4>
                 <p style="color: green;">+ 0</p>
             </div>
-            <div style="padding: 8px; border: 2px solid #ddd; border-radius: 10px; width: 30%;height:6%;border-left:7px solid purple;">
+            <div style="padding: 8px; border: 2px solid #ddd; border-radius: 10px; width: 30%;height:6%;border-left:7px solid purple;background-color:white;color:black">
                 <p style="font-weight: bold;line-height:1;">Total Suicidal Text</p>
-                <h4 style="line-height:0">{total_suicidal_texts}</h4>
+                <h4 style="line-height:0;color:black;">{total_suicidal_texts}</h4>
                 <p style="color: green;">+ 0</p>
             </div>
-            <div style="padding: 8px; border: 2px solid #ddd; border-radius: 10px; width: 30%;height:6%;border-left:7px solid purple;">
+            <div style="padding: 8px; border: 2px solid #ddd; border-radius: 10px; width: 30%;height:6%;border-left:7px solid purple;background-color:white;color:black;">
                 <p style="font-weight: bold;line-height:1;">Total NoSuicide Text</p>
-                <h4 style="line-height:0">{total_non_suicidal_texts}</h4>
+                <h4 style="line-height:0;color:black">{total_non_suicidal_texts}</h4>
                 <p style="color: green;">+ 0</p>
             </div>
         </div>
@@ -171,7 +173,12 @@ with tab1:
                 y="word", 
                 title=title,
                 orientation='h',  # Horizontal bar chart for readability
-                width=420
+                width=420,
+
+            )
+            fig.update_layout(
+            # xaxis_showgrid=True,
+             yaxis_showgrid=True
             )
             
             return fig
@@ -218,6 +225,10 @@ with tab1:
                 category_orders={'sentiment': ['positive', 'neutral', 'negative']},
                 width=420
             )
+            fig.update_layout(
+            # xaxis_showgrid=True,
+             yaxis_showgrid=True
+            )
             
             return fig
 
@@ -249,6 +260,10 @@ with tab1:
                 title=f'Top 10 Bigrams for Class: {data["class"].iloc[0]}',
                 width=420
             )
+            fig.update_layout(
+            # xaxis_showgrid=True,
+             yaxis_showgrid=True
+            )
             return fig
         with big1:
             st.plotly_chart(create_bigram_plot(suicide_data))
@@ -278,6 +293,10 @@ with tab1:
                 labels={'tsne_1': 'TSNE Component 1', 'tsne_2': 'TSNE Component 2'},
                 width=420,
                 # height=500
+            )
+            fig.update_layout(
+            # xaxis_showgrid=True,
+             yaxis_showgrid=True
             )
 
             return fig
@@ -411,6 +430,10 @@ with tab1:
                 orientation='h',  # Horizontal bar chart for readability
                 width=420
             )
+            fig.update_layout(
+            # xaxis_showgrid=True,
+             yaxis_showgrid=True
+            )
             
             return fig
         suicide_data = data[data['class'] == 'suicide']
@@ -443,6 +466,10 @@ with tab1:
                 orientation='h',  # Horizontal bar chart for readability
                 width=800
             )
+            fig.update_layout(
+            # xaxis_showgrid=True,
+             yaxis_showgrid=True
+            )
             
             return fig
         suicide_data = data[data['class'] == 'suicide']
@@ -469,6 +496,10 @@ with tab1:
                 title=title,
                 orientation='h',  # Horizontal bar chart for readability
                 width=800
+            )
+            fig.update_layout(
+            # xaxis_showgrid=True,
+             yaxis_showgrid=True
             )
             
             return fig
@@ -511,6 +542,10 @@ with tab1:
                 color='sentiment',
                 category_orders={'sentiment': ['positive', 'neutral', 'negative']},
                 width=420
+            )
+            fig.update_layout(
+            # xaxis_showgrid=True,
+             yaxis_showgrid=True
             )
             
             return fig
@@ -555,6 +590,10 @@ with tab1:
                 category_orders={'sentiment': ['positive', 'neutral', 'negative']},
                 width=420
             )
+            fig.update_layout(
+            # xaxis_showgrid=True,
+             yaxis_showgrid=True
+            )
             
             return fig
         fig_suicide_sentiment = plot_sentiment_distribution(suicide_data, "Sentiment Distribution for Suicide Class")
@@ -593,6 +632,10 @@ with tab1:
                 category_orders={'sentiment': ['positive', 'neutral', 'negative']},
                 width=420
             )
+            fig.update_layout(
+            # xaxis_showgrid=True,
+             yaxis_showgrid=True
+            )
             
             return fig
         fig_suicide_sentiment = plot_sentiment_distribution(non_suicide_data, "Sentiment Distribution for Non-Suicide Class")
@@ -621,6 +664,10 @@ with tab1:
                 y='bigram',
                 title=f'Top 10 Bigrams for Class: {data["class"].iloc[0]}',
                 width=420
+            )
+            fig.update_layout(
+            # xaxis_showgrid=True,
+             yaxis_showgrid=True
             )
             return fig
         with big12:
@@ -651,6 +698,10 @@ with tab1:
                 title=f'Top 10 Bigrams for Class: {data["class"].iloc[0]}',
                 width=800
             )
+            fig.update_layout(
+            # xaxis_showgrid=True,
+             yaxis_showgrid=True
+            )
             return fig
         st.plotly_chart(create_bigram_plot(suicide_data))
 
@@ -675,6 +726,10 @@ with tab1:
                 y='bigram',
                 title=f'Top 10 Bigrams for Class: {data["class"].iloc[0]}',
                 width=800
+            )
+            fig.update_layout(
+            # xaxis_showgrid=True,
+             yaxis_showgrid=True
             )
             return fig
         st.plotly_chart(create_bigram_plot(non_suicide_data))
