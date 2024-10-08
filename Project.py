@@ -26,13 +26,17 @@ import lime
 from lime import lime_tabular
 import joblib
 from lime.lime_text import LimeTextExplainer
+from streamlit_cropper import st_cropper
+import pytesseract
 
-# Make sure to download these if running for the first time
-# try:
-#     stop_words = set(stopwords.words('english'))
-# except LookupError:
-#     nltk.download('stopwords')
-#     stop_words = set(stopwords.words('english'))
+# Import all the libraries you may need
+import pytesseract
+
+# Optionally set the path to tesseract.exe
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
+
+
 st.set_page_config(layout="wide")
 
 col1, col2, col3 = st.columns([1, 2, 1])
@@ -490,7 +494,7 @@ with tab1:
                     bigram_df,
                     x='count',
                     y='bigram',
-                    title=f'Top 10 Bigrams for Class: {data["class"].iloc[0]} Texts',
+                    title=f'Top 10 Bigrams for Non-Suicide Texts',
                     width=800
                 )
                 fig.update_layout(
@@ -1139,17 +1143,135 @@ with tab2:
     # """,alow_unsafe_html=True)
     st.write(f"<h3>Explainable Text Classification With LIME and Random Forest</h3>",unsafe_allow_html=True)
     # st.write("Upload a text file/image/copy text and paste in the text box below to get a classification.")
-    file=st.file_uploader("Upload a text file/image to get a classification.",type=["txt","png","jpeg","jpg"])
+    file = st.file_uploader("Upload a text file/image to get a classification.", type=["txt", "png", "jpeg", "jpg"])
+
+    def check_file_type(uploaded_file):
+        if uploaded_file is not None:
+            # Get the file extension
+            file_extension = uploaded_file.name.split('.')[-1].lower()
+            return file_extension
+        return None
+
+    file_type = check_file_type(file)
     if file is not None:
-        # Read the file content
-        bytes_data = file.read()
-        text_data = bytes_data.decode("utf-8")  # Decode bytes to string
-        
-        # Display the text content in the app
-        st.text_area("File content", text_data, height=100)
-        
-        if st.button("Get Classification"):
-            # Load the saved model and vectorizer
+        if file_type in ['jpg', 'jpeg', 'png']:
+            image = Image.open(file)
+            
+            # Show the cropping tool only
+            cropped_image = st_cropper(image, aspect_ratio=None)
+
+            # Display the cropped image
+            st.image(cropped_image, caption="Cropped Image", use_column_width=True)
+            if st.button("Classify Extracted Text"):
+                text_data = pytesseract.image_to_string(cropped_image)
+                def clean_text(text):
+                    # Convert text to lowercase
+                    text = text.lower()
+
+                    # Remove URLs
+                    text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
+
+                    # Remove HTML tags
+                    text = re.sub(r'<.*?>', '', text)
+
+                    # Remove punctuation and special characters
+                    text = re.sub(r'[^a-zA-Z\s]', '', text)
+
+                    # Remove numbers
+                    text = re.sub(r'\d+', '', text)
+
+                    # Tokenize text
+                    words = text.split()
+
+                    # Remove stopwords
+                    stop_words = set(stopwords.words('english'))
+                    words = [word for word in words if word not in stop_words]
+
+                    # Lemmatize words
+                    lemmatizer = WordNetLemmatizer()
+                    words = [lemmatizer.lemmatize(word) for word in words]
+
+                    # Rejoin words into a single string
+                    cleaned_text = ' '.join(words)
+
+                    return cleaned_text
+                df = pd.DataFrame([text_data], columns=['Text'])
+                df["Text"] = df["Text"].apply(clean_text)
+                cleaned_text_data=df.loc[0,"Text"]
+                st.write("Extracted Text:")
+                st.text(cleaned_text_data)
+                # Get modeling results
+                # Load the saved model and vectorizer
+                model = joblib.load('text_model.pkl')
+                vectorizer = joblib.load('vectorizer.pkl')
+
+                # Preprocess the input text for prediction
+                def preprocess_input(text):
+                    # Vectorize the text using the loaded vectorizer
+                    X_text = vectorizer.transform([text])
+                    return X_text
+
+                # Process the input data
+                input_data = preprocess_input(cleaned_text_data)
+
+                # Get the prediction
+                prediction = model.predict(input_data)
+                st.write(f'Prediction: {prediction[0]}')
+
+                # Initialize LimeTextExplainer (text-based explanation)
+                explainer = LimeTextExplainer(class_names=['non-suicide', 'suicide'])  # Adjust class names as necessary
+
+                # Define a prediction function for LIME that works with raw text input
+                def predict_proba(texts):
+                    text_vectors = vectorizer.transform(texts)
+                    return model.predict_proba(text_vectors)
+
+                # Explain the instance using LimeTextExplainer
+                exp = explainer.explain_instance(text_data, predict_proba)
+
+                # Display LIME explanations in a readable format
+                exp_html = exp.as_html()  # Convert explanation to HTML
+                st.components.v1.html(exp_html, height=800)
+        else:
+            bytes_data = file.read()
+            text_data = bytes_data.decode("utf-8")  # Decode bytes to string
+            df = pd.DataFrame([text_data], columns=['Text'])
+
+            def clean_text(text):
+                # Convert text to lowercase
+                text = text.lower()
+
+                # Remove URLs
+                text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
+
+                # Remove HTML tags
+                text = re.sub(r'<.*?>', '', text)
+
+                # Remove punctuation and special characters
+                text = re.sub(r'[^a-zA-Z\s]', '', text)
+
+                # Remove numbers
+                text = re.sub(r'\d+', '', text)
+
+                # Tokenize text
+                words = text.split()
+
+                # Remove stopwords
+                stop_words = set(stopwords.words('english'))
+                words = [word for word in words if word not in stop_words]
+
+                # Lemmatize words
+                lemmatizer = WordNetLemmatizer()
+                words = [lemmatizer.lemmatize(word) for word in words]
+
+                # Rejoin words into a single string
+                cleaned_text = ' '.join(words)
+
+                return cleaned_text
+            df["Text"] = df["Text"].apply(clean_text)
+            cleaned_text_data=df.loc[0,"Text"]
+            # Display the text content in the app
+            st.text_area("File content",  cleaned_text_data, height=100)
             model = joblib.load('text_model.pkl')
             vectorizer = joblib.load('vectorizer.pkl')
 
@@ -1160,7 +1282,7 @@ with tab2:
                 return X_text
 
             # Process the input data
-            input_data = preprocess_input(text_data)
+            input_data = preprocess_input(cleaned_text_data)
 
             # Get the prediction
             prediction = model.predict(input_data)
@@ -1184,6 +1306,46 @@ with tab2:
 
 
 
+    # if file is not None:
+    #     # Read the file content
+    #     bytes_data = file.read()
+    #     text_data = bytes_data.decode("utf-8")  # Decode bytes to string
+        
+    #     # Display the text content in the app
+    #     st.text_area("File content", text_data, height=100)
+        
+    #     if st.button("Get Classification"):
+    #         # Load the saved model and vectorizer
+    #         model = joblib.load('text_model.pkl')
+    #         vectorizer = joblib.load('vectorizer.pkl')
+
+    #         # Preprocess the input text for prediction
+    #         def preprocess_input(text):
+    #             # Vectorize the text using the loaded vectorizer
+    #             X_text = vectorizer.transform([text])
+    #             return X_text
+
+    #         # Process the input data
+    #         input_data = preprocess_input(text_data)
+
+    #         # Get the prediction
+    #         prediction = model.predict(input_data)
+    #         st.write(f'Prediction: {prediction[0]}')
+
+    #         # Initialize LimeTextExplainer (text-based explanation)
+    #         explainer = LimeTextExplainer(class_names=['non-suicide', 'suicide'])  # Adjust class names as necessary
+
+    #         # Define a prediction function for LIME that works with raw text input
+    #         def predict_proba(texts):
+    #             text_vectors = vectorizer.transform(texts)
+    #             return model.predict_proba(text_vectors)
+
+    #         # Explain the instance using LimeTextExplainer
+    #         exp = explainer.explain_instance(text_data, predict_proba)
+
+    #         # Display LIME explanations in a readable format
+    #         exp_html = exp.as_html()  # Convert explanation to HTML
+    #         st.components.v1.html(exp_html, height=800)
 
 
 
@@ -1196,54 +1358,8 @@ with tab2:
 
 
 
-    
-    # Data processing steps
-    # sent1,sent2=st.columns([0.5,0.5])
-    # nltk.download('vader_lexicon')
-
-    # # Initialize VADER sentiment analyzer
-    # sid = SentimentIntensityAnalyzer()
-
-    # # Function to compute sentiment score (continuous score)
-    # def compute_sentiment_score(text):
-    #     return sid.polarity_scores(text)['compound']
-
-    # # Apply sentiment score computation
-    # data['sentiment_score'] = data['cleaned_text'].apply(compute_sentiment_score)
-    # data['text_length'] = data['cleaned_text'].apply(lambda x: len(x.split()))
-    # data = data.drop(['text'], axis=1)
-    # data=data.iloc[:,1:]
-    # vectorizer = TfidfVectorizer(max_features=1000)  # You can adjust max_features
-    # X_text = vectorizer.fit_transform(data['cleaned_text'])
-
-    # # Convert to array
-    # X_text_array = X_text.toarray()
-    # X_numeric = data[['text_length', 'sentiment_score']].values
-    # X_combined = np.hstack((X_text_array, X_numeric))
-    # y = data['class']  # Target variable (e.g., 'non-suicide' class)
-
-    # X_train, X_test, y_train, y_test = train_test_split(X_combined, y, test_size=0.2, random_state=42)
-
-    # # Train the model (Random Forest)
-    # model = RandomForestClassifier()
-    # model.fit(X_train, y_train)
-
-    # explainer = lime_tabular.LimeTabularExplainer(
-    #     X_train, 
-    #     feature_names=vectorizer.get_feature_names_out().tolist() + ['text_length', 'sentiment_score'],
-    #     class_names=['non-suicide', 'suicide'],  # Adjust based on your class names
-    #     verbose=True, 
-    #     mode='classification'
-    # )
-
-    # i = 0  # Index of the sample you want to explain
-    # exp = explainer.explain_instance(X_test[i], model.predict_proba)
-    # exp.show_in_notebook(show_table=True, show_all=False)
 
 
 
 
-
-
-
-
+  
